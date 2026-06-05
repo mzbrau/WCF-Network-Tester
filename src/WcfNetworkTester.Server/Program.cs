@@ -10,12 +10,13 @@ namespace WcfNetworkTester.Server
     {
         private static void Main(string[] args)
         {
+            string hostName = ParseHost(args, "localhost");
             int port = ParsePort(args, defaultPort: 8080);
 
             Console.Title = "WCF Network Tester — Server";
-            PrintBanner(port);
+            PrintBanner(hostName, port);
 
-            string baseAddress = $"http://localhost:{port}/";
+            string baseAddress = $"http://{hostName}:{port}/";
 
             using (var host = new ServiceHost(typeof(NetworkTestService), new Uri(baseAddress)))
             {
@@ -53,7 +54,7 @@ namespace WcfNetworkTester.Server
                 try
                 {
                     host.Open();
-                    PrintEndpoints(host, port);
+                    PrintEndpoints(hostName, port);
 
                     Console.WriteLine();
                     Console.WriteLine("  Press ENTER to stop the server...");
@@ -73,7 +74,7 @@ namespace WcfNetworkTester.Server
             }
         }
 
-        private static void PrintBanner(int port)
+        private static void PrintBanner(string hostName, int port)
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine();
@@ -81,18 +82,36 @@ namespace WcfNetworkTester.Server
             Console.WriteLine("  ║       WCF Network Tester — Server        ║");
             Console.WriteLine("  ╚══════════════════════════════════════════╝");
             Console.ResetColor();
-            Console.WriteLine($"  Starting on port {port}...");
+            Console.WriteLine($"  Starting on {hostName}:{port}...");
             Console.WriteLine();
         }
 
-        private static void PrintEndpoints(ServiceHost host, int port)
+        private static void PrintEndpoints(string hostName, int port)
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("  Server started successfully. Listening on:");
             Console.ResetColor();
-            Console.WriteLine($"    [XML]     http://localhost:{port}/xml");
-            Console.WriteLine($"    [GZip]    http://localhost:{port}/gzip");
-            Console.WriteLine($"    [ProtoBuf] http://localhost:{port}/protobuf");
+            Console.WriteLine($"    [XML]      http://{hostName}:{port}/xml");
+            Console.WriteLine($"    [GZip]     http://{hostName}:{port}/gzip");
+            Console.WriteLine($"    [ProtoBuf] http://{hostName}:{port}/protobuf");
+        }
+
+        private static string ParseHost(string[] args, string defaultHost)
+        {
+            for (int i = 0; i < args.Length; i++)
+            {
+                string arg = args[i];
+
+                if (TryParseHostToken(arg, out string host))
+                    return host;
+
+                if ((arg.Equals("--host", StringComparison.OrdinalIgnoreCase) ||
+                     arg.Equals("-h", StringComparison.OrdinalIgnoreCase)) &&
+                    i + 1 < args.Length)
+                    return args[i + 1];
+            }
+
+            return defaultHost;
         }
 
         private static int ParsePort(string[] args, int defaultPort)
@@ -130,6 +149,26 @@ namespace WcfNetworkTester.Server
         private static bool TryParsePortValue(string value, out int port)
         {
             return int.TryParse(value, out port) && port > 0 && port < 65536;
+        }
+
+        private static bool TryParseHostToken(string arg, out string host)
+        {
+            const StringComparison comparison = StringComparison.OrdinalIgnoreCase;
+
+            if (arg.StartsWith("--host=", comparison))
+            {
+                host = arg.Substring("--host=".Length);
+                return !string.IsNullOrWhiteSpace(host);
+            }
+
+            if (arg.StartsWith("-h=", comparison))
+            {
+                host = arg.Substring("-h=".Length);
+                return !string.IsNullOrWhiteSpace(host);
+            }
+
+            host = null;
+            return false;
         }
     }
 }

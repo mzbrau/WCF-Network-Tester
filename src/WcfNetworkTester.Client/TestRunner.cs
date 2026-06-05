@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.ServiceModel;
 using WcfNetworkTester.Common;
 using WcfNetworkTester.Contracts;
@@ -13,6 +14,10 @@ namespace WcfNetworkTester.Client
     /// </summary>
     internal static class TestRunner
     {
+        internal const int TotalRunsPerTest = 12;
+        internal const int WarmupRunsPerTest = 2;
+        internal const int MeasuredRunsPerTest = TotalRunsPerTest - WarmupRunsPerTest;
+
         private static readonly PayloadSize[] Sizes =
         {
             PayloadSize.Small,
@@ -54,25 +59,35 @@ namespace WcfNetworkTester.Client
             try
             {
                 byte[] payload = PayloadGenerator.Generate(reqSize);
-
                 var request = new TestRequest
                 {
                     Payload             = payload,
                     ResponsePayloadSize = (int)respSize
                 };
 
-                var sw = Stopwatch.StartNew();
-                TestResponse response = CallEndpoint(encoding, host, port, request);
-                sw.Stop();
+                var durations = new List<double>(TotalRunsPerTest);
 
-                if (response?.Payload == null)
-                    throw new Exception("Null response received.");
+                for (int run = 0; run < TotalRunsPerTest; run++)
+                {
+                    var sw = Stopwatch.StartNew();
+                    TestResponse response = CallEndpoint(encoding, host, port, request);
+                    sw.Stop();
 
-                result.DurationMs = sw.Elapsed.TotalMilliseconds;
+                    if (response?.Payload == null)
+                        throw new Exception("Null response received.");
+
+                    durations.Add(sw.Elapsed.TotalMilliseconds);
+                }
+
+                List<double> measuredDurations = durations.Skip(WarmupRunsPerTest).ToList();
+                result.AverageDurationMs = measuredDurations.Average();
+                result.MinDurationMs = measuredDurations.Min();
+                result.MaxDurationMs = measuredDurations.Max();
+                result.StdDevDurationMs = CalculateStandardDeviation(measuredDurations, result.AverageDurationMs);
                 result.Success    = true;
 
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"  {result.DurationMs,9:F1} ms");
+                Console.WriteLine($"  avg {result.AverageDurationMs,9:F1} ms");
                 Console.ResetColor();
             }
             catch (Exception ex)
@@ -132,6 +147,22 @@ namespace WcfNetworkTester.Client
         {
             try { channel.Close(); }
             catch { channel.Abort(); }
+        }
+
+        private static double CalculateStandardDeviation(IReadOnlyList<double> values, double mean)
+        {
+            if (values == null || values.Count <= 1)
+                return 0;
+
+            double sumOfSquares = 0;
+
+            foreach (double value in values)
+            {
+                double delta = value - mean;
+                sumOfSquares += delta * delta;
+            }
+
+            return Math.Sqrt(sumOfSquares / (values.Count - 1));
         }
 
         // ── Labels ──────────────────────────────────────────────────────────────

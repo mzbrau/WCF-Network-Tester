@@ -63,7 +63,7 @@ namespace WcfNetworkTester.Client
         {
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine($"  Running {TestRunner.EncodingLabel(encoding).TrimEnd()} tests " +
-                              $"(16 combinations)...");
+                              $"(16 combinations × {TestRunner.TotalRunsPerTest} runs, {TestRunner.WarmupRunsPerTest} warm-up)...");
             Console.ResetColor();
             Console.WriteLine();
 
@@ -76,7 +76,7 @@ namespace WcfNetworkTester.Client
         private static List<TestResult> RunAllTests(string host, int port)
         {
             Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine("  Running all tests (48 combinations across 3 encodings)...");
+            Console.WriteLine($"  Running all tests (48 combinations across 3 encodings × {TestRunner.TotalRunsPerTest} runs, {TestRunner.WarmupRunsPerTest} warm-up)...");
             Console.ResetColor();
             Console.WriteLine();
 
