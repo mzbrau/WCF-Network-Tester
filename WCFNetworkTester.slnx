@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WcfNetworkTester.Client/WcfNetworkTester.Client.csproj" />
+    <Project Path="src/WcfNetworkTester.Common/WcfNetworkTester.Common.csproj" />
+    <Project Path="src/WcfNetworkTester.Contracts/WcfNetworkTester.Contracts.csproj" />
+    <Project Path="src/WcfNetworkTester.Server/WcfNetworkTester.Server.csproj" />
+  </Folder>
+</Solution>
