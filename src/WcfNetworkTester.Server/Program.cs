@@ -97,13 +97,39 @@ namespace WcfNetworkTester.Server
 
         private static int ParsePort(string[] args, int defaultPort)
         {
-            for (int i = 0; i < args.Length - 1; i++)
+            for (int i = 0; i < args.Length; i++)
             {
-                if ((args[i] == "--port" || args[i] == "-p") &&
-                    int.TryParse(args[i + 1], out int p) && p > 0 && p < 65536)
-                    return p;
+                string arg = args[i];
+                if (TryParsePortToken(arg, out int port))
+                    return port;
+
+                if ((arg.Equals("--port", StringComparison.OrdinalIgnoreCase) ||
+                     arg.Equals("-p", StringComparison.OrdinalIgnoreCase)) &&
+                    i + 1 < args.Length &&
+                    TryParsePortValue(args[i + 1], out port))
+                    return port;
             }
+
             return defaultPort;
+        }
+
+        private static bool TryParsePortToken(string arg, out int port)
+        {
+            const StringComparison comparison = StringComparison.OrdinalIgnoreCase;
+
+            if (arg.StartsWith("--port=", comparison))
+                return TryParsePortValue(arg.Substring("--port=".Length), out port);
+
+            if (arg.StartsWith("-p=", comparison))
+                return TryParsePortValue(arg.Substring("-p=".Length), out port);
+
+            port = 0;
+            return false;
+        }
+
+        private static bool TryParsePortValue(string value, out int port)
+        {
+            return int.TryParse(value, out port) && port > 0 && port < 65536;
         }
     }
 }

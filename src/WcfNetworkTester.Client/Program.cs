@@ -11,7 +11,7 @@ namespace WcfNetworkTester.Client
             Console.Title = "WCF Network Tester — Client";
 
             string host = ParseArg(args, "--host", "localhost");
-            int    port = int.TryParse(ParseArg(args, "--port", "8080"), out int p) ? p : 8080;
+            int port = ParsePort(args, defaultPort: 8080);
 
             PrintBanner(host, port);
 
@@ -140,6 +140,43 @@ namespace WcfNetworkTester.Client
                     return args[i + 1];
             }
             return defaultValue;
+        }
+
+        private static int ParsePort(string[] args, int defaultPort)
+        {
+            for (int i = 0; i < args.Length; i++)
+            {
+                string arg = args[i];
+                if (TryParsePortToken(arg, out int port))
+                    return port;
+
+                if ((arg.Equals("--port", StringComparison.OrdinalIgnoreCase) ||
+                     arg.Equals("-p", StringComparison.OrdinalIgnoreCase)) &&
+                    i + 1 < args.Length &&
+                    TryParsePortValue(args[i + 1], out port))
+                    return port;
+            }
+
+            return defaultPort;
+        }
+
+        private static bool TryParsePortToken(string arg, out int port)
+        {
+            const StringComparison comparison = StringComparison.OrdinalIgnoreCase;
+
+            if (arg.StartsWith("--port=", comparison))
+                return TryParsePortValue(arg.Substring("--port=".Length), out port);
+
+            if (arg.StartsWith("-p=", comparison))
+                return TryParsePortValue(arg.Substring("-p=".Length), out port);
+
+            port = 0;
+            return false;
+        }
+
+        private static bool TryParsePortValue(string value, out int port)
+        {
+            return int.TryParse(value, out port) && port > 0 && port < 65536;
         }
     }
 }

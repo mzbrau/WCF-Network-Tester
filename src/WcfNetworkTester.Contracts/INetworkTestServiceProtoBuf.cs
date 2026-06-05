@@ -3,8 +3,7 @@ using ProtoBuf.ServiceModel;
 
 namespace WcfNetworkTester.Contracts
 {
-    // Same contract name as INetworkTestService so both share the same service implementation.
-    [ServiceContract(Name = "INetworkTestService")]
+    [ServiceContract]
     public interface INetworkTestServiceProtoBuf
     {
         [OperationContract]
