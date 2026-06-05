@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore WCFNetworkTester.slnx
+
+      - name: Build
+        run: dotnet build WCFNetworkTester.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test WCFNetworkTester.slnx --configuration Release --no-build
+
+      - name: Package Windows binaries
+        id: package
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $stagingRoot = Join-Path $env:RUNNER_TEMP "WCFNetworkTester-$tag"
+          $clientTarget = Join-Path $stagingRoot "WcfNetworkTester.Client"
+          $serverTarget = Join-Path $stagingRoot "WcfNetworkTester.Server"
+
+          Remove-Item $stagingRoot -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $clientTarget -Force | Out-Null
+          New-Item -ItemType Directory -Path $serverTarget -Force | Out-Null
+
+          Copy-Item README.md -Destination $stagingRoot -Force
+          Copy-Item LICENSE -Destination $stagingRoot -Force
+          Copy-Item "src/WcfNetworkTester.Client/bin/Release/net48/*" -Destination $clientTarget -Recurse -Force
+          Copy-Item "src/WcfNetworkTester.Server/bin/Release/net48/*" -Destination $serverTarget -Recurse -Force
+
+          $archiveName = "WCFNetworkTester-$tag-windows.zip"
+          $archivePath = Join-Path $env:RUNNER_TEMP $archiveName
+          if (Test-Path $archivePath) {
+            Remove-Item $archivePath -Force
+          }
+
+          Compress-Archive -Path $stagingRoot -DestinationPath $archivePath -Force
+
+          "archive_path=$archivePath" >> $env:GITHUB_OUTPUT
+          "archive_name=$archiveName" >> $env:GITHUB_OUTPUT
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.package.outputs.archive_path }}
+          generate_release_notes: true
