@@ -151,7 +151,7 @@ namespace WcfNetworkTester.Client
 
         private static double CalculateStandardDeviation(IReadOnlyList<double> values, double mean)
         {
-            if (values == null || values.Count <= 1)
+            if (values == null || values.Count < 2)
                 return 0;
 
             double sumOfSquares = 0;
