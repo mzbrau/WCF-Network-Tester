@@ -29,9 +29,27 @@ namespace WcfNetworkTester.Common.GZip
         public override Message ReadMessage(
             ArraySegment<byte> buffer, BufferManager bufferManager, string contentType)
         {
-            byte[] decompressed = Decompress(buffer.Array, buffer.Offset, buffer.Count);
-            var decompressedSegment = new ArraySegment<byte>(decompressed);
-            return _innerEncoder.ReadMessage(decompressedSegment, bufferManager, contentType);
+            byte[] decompressedBuffer = null;
+
+            try
+            {
+                byte[] decompressed = Decompress(buffer.Array, buffer.Offset, buffer.Count);
+                decompressedBuffer = bufferManager.TakeBuffer(decompressed.Length);
+                Buffer.BlockCopy(decompressed, 0, decompressedBuffer, 0, decompressed.Length);
+
+                var decompressedSegment = new ArraySegment<byte>(decompressedBuffer, 0, decompressed.Length);
+                Message message = _innerEncoder.ReadMessage(decompressedSegment, bufferManager, contentType);
+                decompressedBuffer = null;
+                return message;
+            }
+            finally
+            {
+                if (buffer.Array != null)
+                    bufferManager.ReturnBuffer(buffer.Array);
+
+                if (decompressedBuffer != null)
+                    bufferManager.ReturnBuffer(decompressedBuffer);
+            }
         }
 
         // ── Stream-based read ───────────────────────────────────────────────────

@@ -14,7 +14,10 @@ namespace WcfNetworkTester.Client
         private const int ColEncoding  = 14;
         private const int ColReqSize   = 12;
         private const int ColRespSize  = 13;
-        private const int ColDuration  = 14;
+        private const int ColAverage   = 12;
+        private const int ColMin       = 12;
+        private const int ColMax       = 12;
+        private const int ColStdDev    = 12;
         private const int ColStatus    = 18;
 
         public static void Show(List<TestResult> results)
@@ -63,7 +66,10 @@ namespace WcfNetworkTester.Client
             1 + ColEncoding + 2 +
             1 + ColReqSize  + 2 +
             1 + ColRespSize + 2 +
-            1 + ColDuration + 2 +
+            1 + ColAverage  + 2 +
+            1 + ColMin      + 2 +
+            1 + ColMax      + 2 +
+            1 + ColStdDev   + 2 +
             1 + ColStatus   + 2 + 1;
 
         private static void PrintTopBorder()
@@ -75,7 +81,13 @@ namespace WcfNetworkTester.Client
             Console.Write("╦");
             Console.Write(new string('═', ColRespSize  + 2));
             Console.Write("╦");
-            Console.Write(new string('═', ColDuration  + 2));
+            Console.Write(new string('═', ColAverage   + 2));
+            Console.Write("╦");
+            Console.Write(new string('═', ColMin       + 2));
+            Console.Write("╦");
+            Console.Write(new string('═', ColMax       + 2));
+            Console.Write("╦");
+            Console.Write(new string('═', ColStdDev    + 2));
             Console.Write("╦");
             Console.Write(new string('═', ColStatus    + 2));
             Console.WriteLine("╗");
@@ -83,8 +95,8 @@ namespace WcfNetworkTester.Client
 
         private static void PrintTitle()
         {
-            int inner = ColEncoding + ColReqSize + ColRespSize + ColDuration + ColStatus + 4 * 3;
-            string title = "WCF Network Performance Test Results";
+            int inner = ColEncoding + ColReqSize + ColRespSize + ColAverage + ColMin + ColMax + ColStdDev + ColStatus + 7 * 3;
+            string title = $"WCF Network Performance Test Results ({TestRunner.TotalRunsPerTest} runs, {TestRunner.WarmupRunsPerTest} warm-up)";
             string padded = title.PadLeft((inner + title.Length) / 2).PadRight(inner);
             Console.WriteLine($"  ║ {padded} ║");
         }
@@ -98,7 +110,13 @@ namespace WcfNetworkTester.Client
             Console.Write("╦");
             Console.Write(new string('═', ColRespSize  + 2));
             Console.Write("╦");
-            Console.Write(new string('═', ColDuration  + 2));
+            Console.Write(new string('═', ColAverage   + 2));
+            Console.Write("╦");
+            Console.Write(new string('═', ColMin       + 2));
+            Console.Write("╦");
+            Console.Write(new string('═', ColMax       + 2));
+            Console.Write("╦");
+            Console.Write(new string('═', ColStdDev    + 2));
             Console.Write("╦");
             Console.Write(new string('═', ColStatus    + 2));
             Console.WriteLine("╣");
@@ -113,7 +131,13 @@ namespace WcfNetworkTester.Client
             Console.Write("╬");
             Console.Write(new string('═', ColRespSize  + 2));
             Console.Write("╬");
-            Console.Write(new string('═', ColDuration  + 2));
+            Console.Write(new string('═', ColAverage   + 2));
+            Console.Write("╬");
+            Console.Write(new string('═', ColMin       + 2));
+            Console.Write("╬");
+            Console.Write(new string('═', ColMax       + 2));
+            Console.Write("╬");
+            Console.Write(new string('═', ColStdDev    + 2));
             Console.Write("╬");
             Console.Write(new string('═', ColStatus    + 2));
             Console.WriteLine("╣");
@@ -128,7 +152,13 @@ namespace WcfNetworkTester.Client
             Console.Write("╩");
             Console.Write(new string('═', ColRespSize  + 2));
             Console.Write("╩");
-            Console.Write(new string('═', ColDuration  + 2));
+            Console.Write(new string('═', ColAverage   + 2));
+            Console.Write("╩");
+            Console.Write(new string('═', ColMin       + 2));
+            Console.Write("╩");
+            Console.Write(new string('═', ColMax       + 2));
+            Console.Write("╩");
+            Console.Write(new string('═', ColStdDev    + 2));
             Console.Write("╩");
             Console.Write(new string('═', ColStatus    + 2));
             Console.WriteLine("╝");
@@ -140,7 +170,10 @@ namespace WcfNetworkTester.Client
                 $"  ║ {"Encoding".PadRight(ColEncoding)} ║" +
                 $" {"Req Size".PadRight(ColReqSize)} ║" +
                 $" {"Resp Size".PadRight(ColRespSize)} ║" +
-                $" {"Duration".PadLeft(ColDuration)} ║" +
+                $" {"Average".PadLeft(ColAverage)} ║" +
+                $" {"Min".PadLeft(ColMin)} ║" +
+                $" {"Max".PadLeft(ColMax)} ║" +
+                $" {"Std Dev".PadLeft(ColStdDev)} ║" +
                 $" {"Status".PadRight(ColStatus)} ║");
         }
 
@@ -150,19 +183,28 @@ namespace WcfNetworkTester.Client
             string reqSize  = TestRunner.SizeLabel(result.RequestSize).TrimEnd();
             string respSize = TestRunner.SizeLabel(result.ResponseSize).TrimEnd();
 
-            string duration;
+            string average;
+            string min;
+            string max;
+            string stdDev;
             string status;
             ConsoleColor statusColor;
 
             if (result.Success)
             {
-                duration    = $"{result.DurationMs,10:F1} ms";
+                average     = $"{result.AverageDurationMs,8:F1} ms";
+                min         = $"{result.MinDurationMs,8:F1} ms";
+                max         = $"{result.MaxDurationMs,8:F1} ms";
+                stdDev      = $"{result.StdDevDurationMs,8:F1} ms";
                 status      = "OK";
                 statusColor = ConsoleColor.Green;
             }
             else
             {
-                duration    = "         N/A  ";
+                average     = "      N/A   ";
+                min         = "      N/A   ";
+                max         = "      N/A   ";
+                stdDev      = "      N/A   ";
                 string msg  = result.ErrorMessage ?? "Unknown error";
                 status      = msg.Length > ColStatus ? msg.Substring(0, ColStatus - 3) + "..." : msg;
                 statusColor = ConsoleColor.Red;
@@ -173,7 +215,10 @@ namespace WcfNetworkTester.Client
                 $"  ║ {encoding.PadRight(ColEncoding)} ║" +
                 $" {reqSize.PadRight(ColReqSize)} ║" +
                 $" {respSize.PadRight(ColRespSize)} ║" +
-                $" {duration.PadLeft(ColDuration)} ║ ");
+                $" {average.PadLeft(ColAverage)} ║" +
+                $" {min.PadLeft(ColMin)} ║" +
+                $" {max.PadLeft(ColMax)} ║" +
+                $" {stdDev.PadLeft(ColStdDev)} ║ ");
 
             // Print status in colour
             Console.ForegroundColor = statusColor;

@@ -6,7 +6,10 @@ namespace WcfNetworkTester.Client
         public EncodingType Encoding      { get; set; }
         public PayloadSize  RequestSize   { get; set; }
         public PayloadSize  ResponseSize  { get; set; }
-        public double       DurationMs    { get; set; }
+        public double       AverageDurationMs { get; set; }
+        public double       MinDurationMs     { get; set; }
+        public double       MaxDurationMs     { get; set; }
+        public double       StdDevDurationMs  { get; set; }
         public bool         Success       { get; set; }
         public string       ErrorMessage  { get; set; }
     }
